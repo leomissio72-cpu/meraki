@@ -66,6 +66,17 @@ a{color:inherit;text-decoration:none}
 .product-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .product-fields .full{grid-column:1/-1}
 
+/* ---- login screen ---- */
+.login-screen{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:0}
+.login-box{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:40px 36px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:22px}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.login-title{font:500 22px/1.1 'Playfair Display',serif;letter-spacing:-.01em}
+.login-title em{color:var(--gold);font-style:italic}
+.login-box .field input{width:100%;font-size:13px;padding:11px 14px}
+.login-btn{width:100%;height:42px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;border:0;border-radius:4px;background:var(--gold);color:#211a14;font-family:inherit;font-weight:600;transition:background .2s}
+.login-btn:hover{background:var(--gold-hover)}
+.login-error{font-size:11px;color:var(--red);text-align:center;min-height:16px;letter-spacing:.03em}
+
 /* ---- toast ---- */
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(12px);background:#2b2318;border:1px solid rgba(201,174,135,.3);color:var(--cream);font-size:11px;letter-spacing:.06em;padding:11px 22px;border-radius:40px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;z-index:999}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -89,6 +100,24 @@ a{color:inherit;text-decoration:none}
 </style>
 </head>
 <body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-brand">
+      <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand-name">meraki sweet</span>
+    </div>
+    <div>
+      <p class="login-title">Área de <em>configuração</em></p>
+    </div>
+    <div class="field">
+      <label for="loginPass">Senha</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
 
 <header class="topbar">
   <div class="topbar-brand">
@@ -388,6 +417,32 @@ a{color:inherit;text-decoration:none}
   });
 
   populate(load());
+})();
+
+// --- login ---
+(function(){
+  var PASS = 'meraki2025';
+  var KEY = 'meraki_auth';
+  function checkAuth(){
+    if(sessionStorage.getItem(KEY) === '1'){
+      document.getElementById('loginScreen').style.display = 'none';
+    }
+  }
+  window.doLogin = function(){
+    var val = document.getElementById('loginPass').value;
+    if(val === PASS){
+      sessionStorage.setItem(KEY, '1');
+      document.getElementById('loginScreen').style.display = 'none';
+    } else {
+      document.getElementById('loginError').textContent = 'Senha incorreta.';
+      document.getElementById('loginPass').value = '';
+    }
+  };
+  document.getElementById('loginPass').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') window.doLogin();
+    document.getElementById('loginError').textContent = '';
+  });
+  checkAuth();
 })();
 </script>
 </body>
