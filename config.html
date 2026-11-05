@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meraki Sweet — Configuração</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;1,500&display=swap">
+<style>
+:root{--ink:#171310;--panel:#201b17;--card:#251e1a;--cream:#e7dfd2;--muted:#a79b8d;--gold:#c9ae87;--gold-hover:#e0c9a8;--rule:rgba(222,204,177,.14);--red:#d96a6a;--green:#6abf8f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--cream);font-family:'DM Sans',sans-serif;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+/* ---- top bar ---- */
+.topbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 6%;background:#15120f;border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:10}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.brand-symbol{height:17px;display:flex;align-items:flex-end;gap:5px;position:relative;margin-right:4px}
+.brand-symbol::before{content:"";position:absolute;width:34px;height:8px;border-top:2px solid var(--gold);border-radius:50%;top:-2px;left:-4px;transform:rotate(-2deg)}
+.brand-symbol i{display:block;width:2.5px;height:14px;border-radius:2px;background:var(--gold)}
+.brand-name{font-size:14px;letter-spacing:.12em;font-weight:400}
+.topbar-badge{background:rgba(201,174,135,.14);color:var(--gold);font-size:8px;letter-spacing:.2em;text-transform:uppercase;padding:4px 9px;border-radius:20px}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:0 16px;height:34px;font:inherit;font-size:9px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;border-radius:3px;transition:background .2s,color .2s,transform .15s;border:0}
+.btn:hover{transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--rule)}
+.btn-outline:hover{color:var(--cream);border-color:rgba(222,204,177,.35)}
+.btn-gold{background:var(--gold);color:#211a14}
+.btn-gold:hover{background:var(--gold-hover)}
+.btn-ghost{background:transparent;color:var(--gold);border:1px solid rgba(201,174,135,.3)}
+.btn-ghost:hover{background:rgba(201,174,135,.08)}
+
+/* ---- layout ---- */
+.layout{max-width:900px;margin:0 auto;padding:48px 6% 80px}
+.page-title{font:500 clamp(26px,3.5vw,38px)/1.1 'Playfair Display',Georgia,serif;letter-spacing:-.02em;margin-bottom:8px}
+.page-title em{color:var(--gold);font-style:italic}
+.page-sub{color:var(--muted);font-size:12px;line-height:1.7;margin-bottom:40px}
+
+/* ---- sections ---- */
+.cfg-section{background:var(--card);border:1px solid var(--rule);border-radius:6px;margin-bottom:20px;overflow:hidden}
+.cfg-section-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--rule);cursor:pointer;user-select:none}
+.cfg-section-head:hover{background:rgba(255,255,255,.025)}
+.cfg-section-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:rgba(201,174,135,.1);color:var(--gold);flex-shrink:0}
+.cfg-section-icon svg{width:14px;height:14px}
+.cfg-section-title{font-size:13px;font-weight:600;letter-spacing:.04em;flex:1}
+.cfg-section-toggle{color:var(--muted);transition:transform .25s}
+.cfg-section-toggle.open{transform:rotate(180deg)}
+.cfg-section-body{padding:22px;display:none}
+.cfg-section-body.open{display:block}
+
+/* ---- fields ---- */
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.field-row.full{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:9px;text-transform:uppercase;letter-spacing:.18em;color:var(--muted)}
+.field input,.field textarea{background:#1a1511;border:1px solid var(--rule);border-radius:4px;color:var(--cream);font:inherit;font-size:12px;padding:10px 13px;outline:none;transition:border-color .2s}
+.field input:focus,.field textarea:focus{border-color:rgba(201,174,135,.5)}
+.field textarea{resize:vertical;min-height:72px;line-height:1.6}
+.field .hint{font-size:10px;color:#766b5e;line-height:1.5}
+
+/* ---- products ---- */
+.product-list{display:flex;flex-direction:column;gap:14px}
+.product-item{background:#1d1713;border:1px solid var(--rule);border-radius:5px;padding:16px 18px}
+.product-item-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.product-num{font:italic 15px 'Playfair Display',serif;color:var(--gold);opacity:.7}
+.product-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.product-fields .full{grid-column:1/-1}
+
+/* ---- toast ---- */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(12px);background:#2b2318;border:1px solid rgba(201,174,135,.3);color:var(--cream);font-size:11px;letter-spacing:.06em;padding:11px 22px;border-radius:40px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{border-color:rgba(217,106,106,.4);color:var(--red)}
+
+/* ---- preview link ---- */
+.preview-bar{background:rgba(201,174,135,.06);border:1px solid var(--rule);border-radius:5px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:10px}
+.preview-bar p{font-size:11px;color:var(--muted);line-height:1.6}
+.preview-bar a{font-size:9px;text-transform:uppercase;letter-spacing:.16em;color:var(--gold);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.preview-bar a svg{width:13px;height:13px}
+
+/* ---- reset confirm ---- */
+.reset-row{display:flex;align-items:center;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--rule)}
+.reset-row p{font-size:10px;color:#766b5e;line-height:1.5;flex:1}
+
+@media(max-width:600px){
+  .field-row,.product-fields{grid-template-columns:1fr}
+  .product-fields .full{grid-column:auto}
+  .topbar-actions .btn-outline{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="brand-name">meraki sweet</span>
+    <span class="topbar-badge">config</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline" id="btn-reset" type="button">Resetar padrões</button>
+    <button class="btn btn-gold" id="btn-save" type="button">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Salvar configurações
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+  <h1 class="page-title">Configuração do <em>site</em></h1>
+  <p class="page-sub">Preencha os campos abaixo. As configurações são salvas no navegador e aplicadas ao site automaticamente quando você abre o <strong>index.html</strong> na mesma pasta.</p>
+
+  <div class="preview-bar">
+    <p>Depois de salvar, abra o site para ver as alterações em tempo real.</p>
+    <a href="index.html" target="_blank">
+      Abrir site
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+    </a>
+  </div>
+
+  <!-- MARCA -->
+  <div class="cfg-section">
+    <div class="cfg-section-head" data-section="brand">
+      <div class="cfg-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+      </div>
+      <span class="cfg-section-title">Marca</span>
+      <svg class="cfg-section-toggle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="cfg-section-body open" id="body-brand">
+      <div class="field-row">
+        <div class="field"><label>Nome da marca</label><input type="text" id="f-brand" placeholder="Meraki Sweet"></div>
+        <div class="field"><label>Tagline</label><input type="text" id="f-tagline" placeholder="Além da sobremesa"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFEITEIRA -->
+  <div class="cfg-section">
+    <div class="cfg-section-head" data-section="confectioner">
+      <div class="cfg-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+      </div>
+      <span class="cfg-section-title">Confeiteira</span>
+      <svg class="cfg-section-toggle open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="cfg-section-body open" id="body-confectioner">
+      <div class="field-row">
+        <div class="field"><label>Nome</label><input type="text" id="f-conf-name" placeholder="Nome da confeiteira"></div>
+        <div class="field"><label>Apresentação curta</label><input type="text" id="f-conf-presentation" placeholder="A confeiteira por trás da Meraki Sweet"></div>
+      </div>
+      <div class="field-row full">
+        <div class="field">
+          <label>História / bio</label>
+          <textarea id="f-conf-story" rows="3" placeholder="Conte a história por trás da marca..."></textarea>
+        </div>
+      </div>
+      <div class="field-row full">
+        <div class="field">
+          <label>URL do retrato (foto da confeiteira)</label>
+          <input type="url" id="f-conf-portrait" placeholder="https://... ou deixe vazio para usar o placeholder">
+          <span class="hint">Informe uma URL pública de imagem. Deixe em branco para manter o placeholder ilustrado.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHATSAPP -->
+  <div class="cfg-section">
+    <div class="cfg-section-head" data-section="whatsapp">
+      <div class="cfg-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+      </div>
+      <span class="cfg-section-title">WhatsApp</span>
+      <svg class="cfg-section-toggle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="cfg-section-body" id="body-whatsapp">
+      <div class="field-row">
+        <div class="field">
+          <label>Número (com código do país)</label>
+          <input type="tel" id="f-wa-phone" placeholder="5511999999999">
+          <span class="hint">Ex: 5511999999999 — apenas números, sem espaços ou símbolos.</span>
+        </div>
+        <div class="field">
+          <label>Mensagem padrão</label>
+          <input type="text" id="f-wa-message" placeholder="Olá! Gostaria de conhecer a coleção Meraki Sweet.">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REDES SOCIAIS -->
+  <div class="cfg-section">
+    <div class="cfg-section-head" data-section="social">
+      <div class="cfg-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+      </div>
+      <span class="cfg-section-title">Redes sociais</span>
+      <svg class="cfg-section-toggle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="cfg-section-body" id="body-social">
+      <div class="field-row">
+        <div class="field">
+          <label>Instagram (URL completa)</label>
+          <input type="url" id="f-ig" placeholder="https://instagram.com/merakisweet">
+        </div>
+        <div class="field">
+          <label>TikTok (URL completa)</label>
+          <input type="url" id="f-tiktok" placeholder="https://tiktok.com/@merakisweet">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTREGA -->
+  <div class="cfg-section">
+    <div class="cfg-section-head" data-section="delivery">
+      <div class="cfg-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <span class="cfg-section-title">Entrega</span>
+      <svg class="cfg-section-toggle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="cfg-section-body" id="body-delivery">
+      <div class="field-row">
+        <div class="field">
+          <label>Endereço / região</label>
+          <input type="text" id="f-delivery-addr" placeholder="São Paulo · SP">
+        </div>
+        <div class="field">
+          <label>Descrição da entrega</label>
+          <input type="text" id="f-delivery-desc" placeholder="Consulte disponibilidade de entrega ao fazer seu pedido.">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUTOS -->
+  <div class="cfg-section">
+    <div class="cfg-section-head" data-section="products">
+      <div class="cfg-section-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+      </div>
+      <span class="cfg-section-title">Produtos (4 itens da coleção)</span>
+      <svg class="cfg-section-toggle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="cfg-section-body" id="body-products">
+      <div class="product-list" id="product-list"></div>
+    </div>
+  </div>
+
+  <div class="reset-row">
+    <p>Ao resetar, todas as configurações voltam ao padrão original do template. Esta ação não pode ser desfeita.</p>
+    <button class="btn btn-outline" id="btn-reset-bottom" type="button">Resetar padrões</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var DEFAULTS = {
+    brand:"Meraki Sweet",tagline:"Além da sobremesa",
+    confectioner:{name:"Nome da confeiteira",portrait:"",presentation:"A confeiteira por trás da Meraki Sweet",story:"A Meraki Sweet nasceu do desejo de transformar ingredientes escolhidos com cuidado em momentos que ficam. Cada criação é feita à mão, em pequenos lotes, com tempo, técnica e afeto."},
+    whatsapp:{phone:"",message:"Olá! Gostaria de conhecer a coleção Meraki Sweet."},
+    social:{instagram:"",tiktok:""},
+    delivery:{address:"",description:"Consulte disponibilidade de entrega ao fazer seu pedido."},
+    products:[
+      {name:"Dark Velvet",description:"Chocolate intenso, centro macio e acabamento aveludado.",price:"42",label:"O favorito"},
+      {name:"Hazelnut Praliné",description:"Avelã tostada, praliné artesanal e chocolate ao leite.",price:"45",label:"Textura & contraste"},
+      {name:"Golden Caramel",description:"Caramelo dourado, flor de sal e ganache delicada.",price:"44",label:"Pequeno luxo"},
+      {name:"Midnight",description:"Cacau profundo, crocante de nibs e final persistente.",price:"46",label:"Edição da casa"}
+    ]
+  };
+
+  function load(){
+    try{ return JSON.parse(localStorage.getItem('meraki_config')) || JSON.parse(JSON.stringify(DEFAULTS)); }
+    catch(e){ return JSON.parse(JSON.stringify(DEFAULTS)); }
+  }
+
+  function populate(cfg){
+    document.getElementById('f-brand').value = cfg.brand||'';
+    document.getElementById('f-tagline').value = cfg.tagline||'';
+    document.getElementById('f-conf-name').value = cfg.confectioner.name||'';
+    document.getElementById('f-conf-presentation').value = cfg.confectioner.presentation||'';
+    document.getElementById('f-conf-story').value = cfg.confectioner.story||'';
+    document.getElementById('f-conf-portrait').value = cfg.confectioner.portrait||'';
+    document.getElementById('f-wa-phone').value = cfg.whatsapp.phone||'';
+    document.getElementById('f-wa-message').value = cfg.whatsapp.message||'';
+    document.getElementById('f-ig').value = cfg.social.instagram||'';
+    document.getElementById('f-tiktok').value = cfg.social.tiktok||'';
+    document.getElementById('f-delivery-addr').value = cfg.delivery.address||'';
+    document.getElementById('f-delivery-desc').value = cfg.delivery.description||'';
+    renderProducts(cfg.products);
+  }
+
+  function renderProducts(products){
+    var list = document.getElementById('product-list');
+    list.innerHTML = '';
+    products.forEach(function(p,i){
+      var div = document.createElement('div');
+      div.className = 'product-item';
+      div.innerHTML =
+        '<div class="product-item-head"><span class="product-num">0'+(i+1)+'</span></div>'+
+        '<div class="product-fields">'+
+          '<div class="field"><label>Nome</label><input type="text" id="p-name-'+i+'" value="'+esc(p.name)+'" placeholder="Nome do produto"></div>'+
+          '<div class="field"><label>Etiqueta / badge</label><input type="text" id="p-label-'+i+'" value="'+esc(p.label)+'" placeholder="O favorito"></div>'+
+          '<div class="field"><label>Preço (R$)</label><input type="text" id="p-price-'+i+'" value="'+esc(p.price)+'" placeholder="42"></div>'+
+          '<div class="field full"><label>Descrição</label><input type="text" id="p-desc-'+i+'" value="'+esc(p.description)+'" placeholder="Descreva o produto..."></div>'+
+        '</div>';
+      list.appendChild(div);
+    });
+  }
+
+  function esc(s){
+    return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function collect(){
+    var cfg = JSON.parse(JSON.stringify(load()));
+    cfg.brand = document.getElementById('f-brand').value;
+    cfg.tagline = document.getElementById('f-tagline').value;
+    cfg.confectioner.name = document.getElementById('f-conf-name').value;
+    cfg.confectioner.presentation = document.getElementById('f-conf-presentation').value;
+    cfg.confectioner.story = document.getElementById('f-conf-story').value;
+    cfg.confectioner.portrait = document.getElementById('f-conf-portrait').value;
+    cfg.whatsapp.phone = document.getElementById('f-wa-phone').value.replace(/\D/g,'');
+    cfg.whatsapp.message = document.getElementById('f-wa-message').value;
+    cfg.social.instagram = document.getElementById('f-ig').value;
+    cfg.social.tiktok = document.getElementById('f-tiktok').value;
+    cfg.delivery.address = document.getElementById('f-delivery-addr').value;
+    cfg.delivery.description = document.getElementById('f-delivery-desc').value;
+    cfg.products = cfg.products.map(function(p,i){
+      return {
+        name: document.getElementById('p-name-'+i)?.value||p.name,
+        label: document.getElementById('p-label-'+i)?.value||p.label,
+        price: document.getElementById('p-price-'+i)?.value||p.price,
+        description: document.getElementById('p-desc-'+i)?.value||p.description,
+        image: p.image
+      };
+    });
+    return cfg;
+  }
+
+  function showToast(msg, isError){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError?' error':'');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.className='toast'; }, 2800);
+  }
+
+  function save(){
+    try{
+      var cfg = collect();
+      localStorage.setItem('meraki_config', JSON.stringify(cfg));
+      showToast('✓ Configurações salvas com sucesso.');
+    }catch(e){
+      showToast('Erro ao salvar. Tente novamente.', true);
+    }
+  }
+
+  function reset(){
+    if(!confirm('Resetar para os valores padrão do template?')) return;
+    localStorage.removeItem('meraki_config');
+    populate(JSON.parse(JSON.stringify(DEFAULTS)));
+    showToast('Configurações resetadas.');
+  }
+
+  // accordion
+  document.querySelectorAll('.cfg-section-head').forEach(function(head){
+    head.addEventListener('click', function(){
+      var id = 'body-' + head.dataset.section;
+      var body = document.getElementById(id);
+      var toggle = head.querySelector('.cfg-section-toggle');
+      if(!body) return;
+      var isOpen = body.classList.toggle('open');
+      toggle.classList.toggle('open', isOpen);
+    });
+  });
+
+  document.getElementById('btn-save').addEventListener('click', save);
+  document.getElementById('btn-reset').addEventListener('click', reset);
+  document.getElementById('btn-reset-bottom').addEventListener('click', reset);
+
+  // keyboard shortcut: Ctrl+S / Cmd+S
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); save(); }
+  });
+
+  populate(load());
+})();
+</script>
+</body>
+</html>
