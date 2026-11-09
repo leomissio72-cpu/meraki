@@ -531,3 +531,263 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offse
   });
 })();
 </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  var sec = document.getElementById('experiencia');
+  var canvas = document.getElementById('chocoCanvas');
+  if(!canvas) return;
+  function init(){
+    if(!window.THREE){ setTimeout(init, 50); return; }
+    run();
+  }
+  function run(){
+    var W = sec.clientWidth || window.innerWidth;
+    var H = sec.clientHeight || window.innerHeight;
+
+    var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:false});
+    renderer.setSize(W,H);
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.setClearColor(0x080401,1);
+    renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.6;
+
+    var scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x080401, 0.016);
+
+    var camera = new THREE.PerspectiveCamera(55, W/H, 0.1, 200);
+    camera.position.set(0, 7, 20);
+    camera.lookAt(0, 1, 0);
+
+    /* ── LIGHTS ── */
+    scene.add(new THREE.AmbientLight(0x1a0905, 2));
+    var L1 = new THREE.PointLight(0xd4870a, 8, 40); L1.position.set(8,14,8); scene.add(L1);
+    var L2 = new THREE.PointLight(0x7a3010, 4, 30); L2.position.set(-10,4,-5); scene.add(L2);
+    var L3 = new THREE.PointLight(0xf0c060, 3, 25); L3.position.set(0,18,6); scene.add(L3);
+    var L4 = new THREE.PointLight(0x3d1505, 5, 20); L4.position.set(0,2,12); scene.add(L4);
+
+    /* ── LIQUID CHOCOLATE SURFACE ── */
+    var sRes = 80;
+    var sGeo = new THREE.PlaneGeometry(32, 32, sRes, sRes);
+    sGeo.rotateX(-Math.PI/2);
+    var sMat = new THREE.MeshStandardMaterial({color:0x1e0a02, roughness:0.05, metalness:0.75});
+    var surface = new THREE.Mesh(sGeo, sMat);
+    surface.position.y = -4;
+    surface.receiveShadow = true;
+    scene.add(surface);
+    var sOrig = Array.from(sGeo.attributes.position.array);
+
+    /* ── BROWNIE BLOCKS (main 3D elements) ── */
+    var brownies = [];
+    var bColors = [0x180702,0x251008,0x1a0a04,0x2e1509,0x0f0501];
+    for(var b=0; b<14; b++){
+      var w=0.6+Math.random()*1.4, h2=0.3+Math.random()*0.5, d=0.6+Math.random()*1.4;
+      var bGeo = new THREE.BoxGeometry(w,h2,d,2,1,2);
+      var bMat = new THREE.MeshStandardMaterial({
+        color: bColors[b%bColors.length],
+        roughness: 0.7+Math.random()*0.2,
+        metalness: 0.05
+      });
+      var bm = new THREE.Mesh(bGeo, bMat);
+      var ang = (b/14)*Math.PI*2;
+      var r = 3+Math.random()*7;
+      bm.position.set(Math.cos(ang)*r, -1+Math.random()*5, Math.sin(ang)*r-1);
+      bm.rotation.set(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2);
+      bm.castShadow = true;
+      bm._rs = {x:(Math.random()-.5)*.007, y:(Math.random()-.5)*.005, z:(Math.random()-.5)*.005};
+      bm._fo = Math.random()*Math.PI*2;
+      bm._baseY = bm.position.y;
+      bm._orbitR = r; bm._orbitA = ang; bm._orbitS = (Math.random()-.5)*.003;
+      scene.add(bm); brownies.push(bm);
+    }
+
+    /* ── COCOA PODS (toroidal/organic shapes) ── */
+    var pods = [];
+    for(var p=0; p<5; p++){
+      var pGeo = new THREE.TorusGeometry(0.4+Math.random()*0.3, 0.12+Math.random()*0.1, 8, 20);
+      var pMat = new THREE.MeshStandardMaterial({color:0x3d1a06, roughness:0.4, metalness:0.2});
+      var pod = new THREE.Mesh(pGeo, pMat);
+      pod.position.set((Math.random()-.5)*16, 1+Math.random()*5, (Math.random()-.5)*8);
+      pod.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+      pod._rs = {x:(Math.random()-.5)*.012, y:(Math.random()-.5)*.008, z:(Math.random()-.5)*.010};
+      pod._fo = Math.random()*Math.PI*2;
+      pod._baseY = pod.position.y;
+      pod.castShadow = true;
+      scene.add(pod); pods.push(pod);
+    }
+
+    /* ── COCOA SPHERES (melting drops) ── */
+    var spheres = [];
+    for(var s=0; s<8; s++){
+      var sph = new THREE.Mesh(
+        new THREE.SphereGeometry(0.15+Math.random()*0.25, 16, 12),
+        new THREE.MeshStandardMaterial({color:0x2a1005, roughness:0.08, metalness:0.8})
+      );
+      sph.position.set((Math.random()-.5)*18, 2+Math.random()*8, (Math.random()-.5)*8-1);
+      sph._fallV = 0.02+Math.random()*0.03;
+      sph._startY = sph.position.y;
+      sph._resetY = 10+Math.random()*8;
+      sph.castShadow = true;
+      scene.add(sph); spheres.push(sph);
+    }
+
+    /* ── SPIRAL RIBBON ── */
+    var ribbonPts = [];
+    for(var i=0; i<120; i++){
+      var tt = (i/120)*Math.PI*6;
+      ribbonPts.push(new THREE.Vector3(Math.cos(tt)*2.5, tt*0.5-4, Math.sin(tt)*2.5));
+    }
+    var ribbonCurve = new THREE.CatmullRomCurve3(ribbonPts);
+    var ribbonGeo = new THREE.TubeGeometry(ribbonCurve, 100, 0.06, 6, false);
+    var ribbonMat = new THREE.MeshStandardMaterial({color:0x1a0803, roughness:0.04, metalness:0.9});
+    var ribbon = new THREE.Mesh(ribbonGeo, ribbonMat);
+    ribbon.position.set(6, 0, -3);
+    ribbon.castShadow = true;
+    scene.add(ribbon);
+
+    /* ── COCOA DUST PARTICLES ── */
+    var pCount = 2200;
+    var pGeo = new THREE.BufferGeometry();
+    var pPos = new Float32Array(pCount*3);
+    var pVel = new Float32Array(pCount*3);
+    for(var i=0; i<pCount; i++){
+      pPos[i*3]   = (Math.random()-.5)*28;
+      pPos[i*3+1] = Math.random()*22+2;
+      pPos[i*3+2] = (Math.random()-.5)*14;
+      pVel[i*3]   = (Math.random()-.5)*.012;
+      pVel[i*3+1] = -(0.02+Math.random()*.05);
+      pVel[i*3+2] = (Math.random()-.5)*.012;
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
+    var pMat = new THREE.PointsMaterial({color:0x4a1f08, size:0.07, transparent:true, opacity:.7, sizeAttenuation:true, depthWrite:false});
+    scene.add(new THREE.Points(pGeo, pMat));
+
+    /* ── GOLD SHIMMER ── */
+    var gCount = 500;
+    var gGeo = new THREE.BufferGeometry();
+    var gPos = new Float32Array(gCount*3);
+    for(var i=0; i<gCount; i++){
+      gPos[i*3]=(Math.random()-.5)*22; gPos[i*3+1]=Math.random()*14-2; gPos[i*3+2]=(Math.random()-.5)*12;
+    }
+    gGeo.setAttribute('position', new THREE.BufferAttribute(gPos,3));
+    var gMat = new THREE.PointsMaterial({color:0xd4a030, size:0.055, transparent:true, opacity:.55, sizeAttenuation:true, depthWrite:false});
+    var gold = new THREE.Points(gGeo, gMat);
+    scene.add(gold);
+
+    /* ── DRIP STREAMS ── */
+    var drips = [];
+    for(var d=0; d<7; d++){
+      var dMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.06, 2+Math.random()*3, 5),
+        new THREE.MeshStandardMaterial({color:0x120602, roughness:0.04, metalness:0.85, transparent:true, opacity:.9})
+      );
+      dMesh.position.set((Math.random()-.5)*16, 2+Math.random()*7, (Math.random()-.5)*7-1);
+      dMesh.rotation.z = (Math.random()-.5)*.4;
+      dMesh._fv = 0.012+Math.random()*.02;
+      dMesh._ry = 9+Math.random()*7;
+      scene.add(dMesh); drips.push(dMesh);
+    }
+
+    /* ── MOUSE PARALLAX ── */
+    var mx=0,my=0,mtx=0,mty=0;
+    document.addEventListener('mousemove',function(e){
+      mtx=(e.clientX/innerWidth-.5)*2;
+      mty=-(e.clientY/innerHeight-.5)*2;
+    });
+
+    /* ── RESIZE ── */
+    window.addEventListener('resize',function(){
+      W=sec.clientWidth; H=sec.clientHeight;
+      renderer.setSize(W,H);
+      camera.aspect=W/H; camera.updateProjectionMatrix();
+    });
+
+    var clock = new THREE.Clock();
+
+    function tick(){
+      requestAnimationFrame(tick);
+      var t = clock.getElapsedTime();
+
+      /* mouse lerp */
+      mx+=(mtx-mx)*.04; my+=(mty-my)*.04;
+      camera.position.x = mx*3;
+      camera.position.y = 7+my*2;
+      camera.lookAt(0,1,0);
+
+      /* liquid surface */
+      var sp = sGeo.attributes.position;
+      for(var i=0; i<sp.count; i++){
+        var ox=sOrig[i*3], oz=sOrig[i*3+2];
+        sp.setY(i, sOrig[i*3+1]
+          + Math.sin(ox*.45+t*1.2)*.22
+          + Math.sin(oz*.38+t*.95)*.16
+          + Math.sin((ox-oz)*.28+t*.65)*.12
+        );
+      }
+      sp.needsUpdate=true; sGeo.computeVertexNormals();
+
+      /* brownies orbit + float + rotate */
+      for(var b=0; b<brownies.length; b++){
+        var bm=brownies[b];
+        bm._orbitA += bm._orbitS;
+        bm.position.x = Math.cos(bm._orbitA)*bm._orbitR;
+        bm.position.z = Math.sin(bm._orbitA)*bm._orbitR - 1;
+        bm.position.y = bm._baseY + Math.sin(t*.6+bm._fo)*.35;
+        bm.rotation.x+=bm._rs.x; bm.rotation.y+=bm._rs.y; bm.rotation.z+=bm._rs.z;
+      }
+
+      /* cocoa pods spin + float */
+      for(var p=0; p<pods.length; p++){
+        pods[p].rotation.x+=pods[p]._rs.x;
+        pods[p].rotation.y+=pods[p]._rs.y;
+        pods[p].rotation.z+=pods[p]._rs.z;
+        pods[p].position.y = pods[p]._baseY + Math.sin(t*.5+pods[p]._fo)*.45;
+      }
+
+      /* spheres fall */
+      for(var s=0; s<spheres.length; s++){
+        spheres[s].position.y -= spheres[s]._fallV;
+        spheres[s].rotation.x += .015;
+        if(spheres[s].position.y < -4.5){
+          spheres[s].position.y = spheres[s]._resetY;
+          spheres[s].position.x = (Math.random()-.5)*18;
+        }
+      }
+
+      /* ribbon breathe */
+      ribbon.rotation.y = t*.12;
+      ribbon.position.y = Math.sin(t*.4)*.8;
+
+      /* particles rain */
+      for(var i=0; i<pCount; i++){
+        pPos[i*3]+=pVel[i*3]; pPos[i*3+1]+=pVel[i*3+1]; pPos[i*3+2]+=pVel[i*3+2];
+        if(pPos[i*3+1]<-4){ pPos[i*3]=(Math.random()-.5)*28; pPos[i*3+1]=18+Math.random()*8; pPos[i*3+2]=(Math.random()-.5)*14; }
+      }
+      pGeo.attributes.position.needsUpdate=true;
+
+      /* drips */
+      for(var d=0; d<drips.length; d++){
+        drips[d].position.y -= drips[d]._fv;
+        if(drips[d].position.y<-5){ drips[d].position.y=drips[d]._ry; drips[d].position.x=(Math.random()-.5)*16; }
+      }
+
+      /* gold shimmer */
+      gMat.opacity = .25+Math.sin(t*2.5)*.3;
+      gold.rotation.y = t*.025;
+
+      /* lights pulse */
+      L1.intensity = 7+Math.sin(t*.9)*2;
+      L3.position.x = Math.sin(t*.35)*8;
+      L3.position.z = Math.cos(t*.35)*8+6;
+
+      renderer.render(scene, camera);
+    }
+    tick();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
